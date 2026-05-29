@@ -337,70 +337,72 @@
             }
         };
 
-    function toggleAuthMode() {
-        const loginForm = document.getElementById('login-form');
-        const signupForm = document.getElementById('signup-form');
-        document.getElementById('login-error').style.display = 'none';
-        document.getElementById('signup-error').style.display = 'none';
+        function toggleAuthMode() {
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            document.getElementById('login-error').style.display = 'none';
+            document.getElementById('signup-error').style.display = 'none';
 
-        if (loginForm.style.display === 'none') {
-            loginForm.style.display = 'block';
-            signupForm.style.display = 'none';
-        } else {
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'block';
-        }
-    }
-
-    async function submitAuth(actionType) {
-        let userVal, pinVal, errElement;
-
-        if (actionType === 'login') {
-            userVal = document.getElementById('login-user').value.trim();
-            pinVal = document.getElementById('login-pin').value;
-            errElement = document.getElementById('login-error');
-        } else {
-            userVal = document.getElementById('signup-user').value.trim();
-            pinVal = document.getElementById('signup-pin').value;
-            errElement = document.getElementById('signup-error');
-        }
-
-        if (userVal === "" || pinVal === "") {
-            errElement.innerText = "FILL ALL FIELDS"; errElement.style.display = 'block'; return;
-        }
-
-        try {
-            const response = await fetch('https://ai.yong1412.my/api/history.php', {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: actionType, 
-                    username: userVal, 
-                    password: pinVal 
-                })
-            });
-            const data = await response.json();
-
-            if (data.status === 'success') {
-                if (actionType === 'register') {
-                    // Success register! Auto-login.
-                    activeUser = userVal;
-                    localStorage.setItem('pi_ai_user', activeUser);
-                    initSystem();
-                } else {
-                    // Success login!
-                    activeUser = userVal;
-                    localStorage.setItem('pi_ai_user', activeUser);
-                    initSystem();
-                }
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
             } else {
-                errElement.innerText = data.message.toUpperCase();
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+            }
+        }
+
+        async function submitAuth(actionType) {
+            let userVal, pinVal, errElement;
+
+            if (actionType === 'login') {
+                userVal = document.getElementById('login-user').value.trim();
+                pinVal = document.getElementById('login-pin').value;
+                errElement = document.getElementById('login-error');
+            } else {
+                userVal = document.getElementById('signup-user').value.trim();
+                pinVal = document.getElementById('signup-pin').value;
+                errElement = document.getElementById('signup-error');
+            }
+
+            if (userVal === "" || pinVal === "") {
+                errElement.innerText = "FILL ALL FIELDS"; errElement.style.display = 'block'; return;
+            }
+
+            try {
+                const response = await fetch('https://ai.yong1412.my/api/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        model: 'qwen2.5-coder:0.5b', // <--- Set to your new lightweight model
+                        messages: recentMessages,
+                        stream: true,
+                        keep_alive: '24h',
+                        options: { num_ctx: 2048, num_thread: 4 } // The 4 threads match your Pi 4 architecture perfectly
+                    })
+                });
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    if (actionType === 'register') {
+                        // Success register! Auto-login.
+                        activeUser = userVal;
+                        localStorage.setItem('pi_ai_user', activeUser);
+                        initSystem();
+                    } else {
+                        // Success login!
+                        activeUser = userVal;
+                        localStorage.setItem('pi_ai_user', activeUser);
+                        initSystem();
+                    }
+                } else {
+                    errElement.innerText = data.message.toUpperCase();
+                    errElement.style.display = 'block';
+                }
+            } catch (e) {
+                errElement.innerText = "SERVER CONNECTION FAILED";
                 errElement.style.display = 'block';
             }
-        } catch (e) {
-            errElement.innerText = "SERVER CONNECTION FAILED";
-            errElement.style.display = 'block';
         }
-    }
 
         function logout() {
             localStorage.removeItem('pi_ai_user');
@@ -443,7 +445,7 @@
                     conversationHistory.push({ role: msg.role, content: msg.content });
 
                     const cssClass = msg.role === 'user' ? 'user-row' : 'ai-row';
-                    const label = msg.role === 'user' ? activeUser : 'Phi-3';
+                    const label = msg.role === 'user' ? activeUser : 'Qwen2.5-Coder';
 
                     chatBox.innerHTML += `
                     <div class="message-row ${cssClass}">
@@ -461,11 +463,11 @@
                 if (!res.ok) return;
                 const data = await res.json();
                 document.getElementById('pi-temp').innerText = `${data.temp}°C`;
-                
+
                 // === ADDED CPU UPDATE HERE ===
                 document.getElementById('pi-cpu').innerText = `${data.cpu_load}`;
                 // ==============================
-                
+
                 document.getElementById('pi-ram').innerText = `${data.used_ram}`;
             } catch (e) { }
         }
@@ -487,10 +489,10 @@
             const aiRow = document.createElement('div');
             aiRow.className = 'message-row ai-row';
             aiRow.innerHTML = `
-            <span class="label">Phi-3</span>
-            <div class="bubble">...</div>
-            <span class="stats">Processing: <span class="live-timer">0.0</span>s</span>
-        `;
+    <span class="label">Qwen2.5-Coder</span>
+    <div class="bubble">...</div>
+    <span class="stats">Processing: <span class="live-timer">0.0</span>s</span>
+`;
             chatBox.appendChild(aiRow);
             chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -504,11 +506,14 @@
             }, 100);
 
             try {
+                // THE FIX: Only grab the last 4 messages (2 interactions) to send to the AI
+                const recentMessages = conversationHistory.slice(-4);
+
                 const response = await fetch('https://ai.yong1412.my/api/chat', {
                     method: 'POST',
                     body: JSON.stringify({
                         model: 'phi3',
-                        messages: conversationHistory,
+                        messages: recentMessages, // <--- The Goldfish Memory
                         stream: true,
                         keep_alive: '24h',
                         options: { num_ctx: 2048, num_thread: 4 }
