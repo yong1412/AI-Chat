@@ -1,388 +1,239 @@
-Here is the updated HTML code with the login overlay, user authentication logic, and the logout button completely removed. The app now boots directly into the initialization phase and defaults to a standard "LOCAL" user.
-
-```html
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pi-AI Control Center</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pi4 AI Control Center</title>
     <style>
-        :root {
-            --bg-color: #0d1117;
-            --container-bg: #161b22;
-            --border-color: #30363d;
-            --text-main: #c9d1d9;
-            --text-dim: #8b949e;
-            --user-bubble: #238636;
-            --ai-bubble: #1c2128;
-            --accent: #58a6ff;
-            --danger: #f85149;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
+        /* Base Styling */
         body {
-            background: var(--bg-color);
-            color: var(--text-main);
-            font-family: -apple-system, system-ui, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 0;
             display: flex;
-            justify-content: center;
-            height: 100dvh;
-            overflow: hidden;
+            flex-direction: column;
+            height: 100vh;
         }
 
-        /* --- HARDWARE TELEMETRY PANEL --- */
+        /* Telemetry Status Bar */
         #telemetry-bar {
+            background-color: #1e1e1e;
+            padding: 15px 20px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(22, 27, 34, 0.8);
-            border-bottom: 1px solid var(--border-color);
-            padding: 10px 20px;
-            font-family: monospace;
-            font-size: 11px;
-            color: var(--text-dim);
-            width: 100%;
-        }
-
-        .stat-item span {
-            color: var(--text-main);
+            justify-content: space-around;
+            border-bottom: 2px solid #333;
+            font-size: 14px;
             font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+        .stat { color: #4DA8DA; }
+        .val { color: #ffffff; margin-left: 5px; }
+        .error-text { color: #ff5252; }
 
-        .critical-stat {
-            color: var(--danger) !important;
-        }
-
-        /* --- CONNECTION OVERLAY --- */
-        #connection-overlay {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-color);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .status-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #484f58;
-            margin-bottom: 20px;
-            transition: 0.3s;
-        }
-
-        .status-dot.online {
-            background: #39d353;
-            box-shadow: 0 0 15px #238636;
-        }
-
-        /* --- CHAT UI --- */
-        #main-container {
-            width: 100%;
-            max-width: 800px;
-            height: 100%;
-            display: none;
-            flex-direction: column;
-            background: var(--container-bg);
-            border-left: 1px solid var(--border-color);
-            border-right: 1px solid var(--border-color);
-        }
-
-        #chat-box {
-            flex: 1;
-            overflow-y: auto;
+        /* Chat Interface */
+        #chat-container {
+            flex-grow: 1;
             padding: 20px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
-
-        .message-row {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
-        }
-
-        .user-row {
-            align-self: flex-end;
-            align-items: flex-end;
-        }
-
-        .ai-row {
-            align-self: flex-start;
-            align-items: flex-start;
-        }
-
-        .label {
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            margin-bottom: 3px;
-        }
-
-        .bubble {
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            line-height: 1.4;
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            line-height: 1.5;
             word-wrap: break-word;
         }
-
-        .user-row .bubble {
-            background: var(--user-bubble);
+        
+        .user-msg {
+            background-color: #2979ff;
             color: white;
-            border-bottom-right-radius: 2px;
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+        
+        .ai-msg {
+            background-color: #2d2d2d;
+            color: #e0e0e0;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+            border: 1px solid #444;
         }
 
-        .ai-row .bubble {
-            background: var(--ai-bubble);
-            border: 1px solid var(--border-color);
-            border-bottom-left-radius: 2px;
-        }
-
-        .stats {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            margin-top: 4px;
-        }
-
+        /* Input Area */
         #input-area {
-            padding: 15px;
-            background: var(--bg-color);
-            border-top: 1px solid var(--border-color);
+            background-color: #1e1e1e;
+            padding: 15px 20px;
             display: flex;
             gap: 10px;
-            flex-shrink: 0;
+            border-top: 2px solid #333;
         }
 
-        input#user-input {
-            flex: 1;
-            padding: 12px;
-            background: var(--container-bg);
-            border: 1px solid var(--border-color);
+        #chat-input {
+            flex-grow: 1;
+            background-color: #2d2d2d;
+            border: 1px solid #444;
             color: white;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: 6px;
             font-size: 16px;
             outline: none;
         }
-
-        button#send-btn {
-            padding: 0 20px;
-            background: var(--user-bubble);
-            border: none;
-            color: white;
-            font-weight: 600;
-            border-radius: 8px;
-            cursor: pointer;
+        
+        #chat-input:focus {
+            border-color: #4DA8DA;
         }
 
-        .error-msg {
-            color: var(--danger);
-            font-size: 12px;
-            margin-bottom: 10px;
-            display: none;
+        #send-btn {
+            background-color: #4DA8DA;
+            color: #121212;
+            border: none;
+            padding: 0 25px;
+            font-weight: bold;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #send-btn:hover {
+            background-color: #3b8bc2;
+        }
+        
+        #send-btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
         }
     </style>
 </head>
-
 <body>
 
-    <div id="connection-overlay">
-        <div id="dot" class="status-dot"></div>
-        <div id="status-text" style="margin-bottom: 15px;">Establishing secure link...</div>
+    <div id="telemetry-bar">
+        <div><span class="stat">SYS TEMP:</span><span class="val" id="sys-temp">-- °C</span></div>
+        <div><span class="stat">CPU LOAD:</span><span class="val" id="cpu-load">-- %</span></div>
+        <div><span class="stat">CORE VOLT:</span><span class="val" id="core-volt">-- V</span></div>
+        <div><span class="stat">RAM USAGE:</span><span class="val" id="ram-usage">-- / -- MB</span></div>
     </div>
 
-    <div id="main-container">
-        <div id="telemetry-bar">
-            <div class="stat-item">USER: <span id="display-user">--</span></div>
-            <div class="stat-item">TEMP: <span id="pi-temp">--°C</span></div>
-            <div class="stat-item">CPU LOAD (Max 5): <span id="pi-cpu">--</span></div>
-            <div class="stat-item">RAM (MB): <span id="pi-ram">-.---</span></div>
-        </div>
+    <div id="chat-container">
+        <div class="message ai-msg">System Online. Qwen2.5-Coder:0.5B is ready. How can I help you today?</div>
+    </div>
 
-        <div id="chat-box"></div>
-        <div id="input-area">
-            <input type="text" id="user-input" placeholder="Initialize command..." autocomplete="off">
-            <button id="send-btn" onclick="sendMessage()">Send</button>
-        </div>
+    <div id="input-area">
+        <input type="text" id="chat-input" placeholder="Enter command or question..." autocomplete="off">
+        <button id="send-btn">Send</button>
     </div>
 
     <script>
-        const syncOverlay = document.getElementById('connection-overlay');
-        const mainContainer = document.getElementById('main-container');
-        const chatBox = document.getElementById('chat-box');
-        const input = document.getElementById('user-input');
-
-        let activeUser = "LOCAL";
-        let conversationHistory = [];
-
-        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
-
-        window.onload = function () {
-            initSystem();
-        };
-
-        async function initSystem() {
-            syncOverlay.style.display = 'flex';
-            document.getElementById('display-user').innerText = activeUser;
-
+        // --- 1. TELEMETRY POLLING (Apache) ---
+        async function fetchTelemetry() {
             try {
-                await fetch('https://ai.yong1412.my/api/tags');
-                document.getElementById('dot').className = 'status-dot online';
-                document.getElementById('status-text').innerText = "Raspberry Pi 4 Linked.";
-
-                setTimeout(async () => {
-                    syncOverlay.style.display = 'none';
-                    mainContainer.style.display = 'flex';
-                    updateSystemHealth();
-                    setInterval(updateSystemHealth, 2000);
-                    await loadUserHistory();
-                }, 800);
-            } catch (e) {
-                document.getElementById('status-text').innerHTML = "Offline <br><small>Proceeding anyway...</small>";
-                setTimeout(() => {
-                    syncOverlay.style.display = 'none';
-                    mainContainer.style.display = 'flex';
-                }, 1500);
+                // Calls your PHP script routed through Cloudflare
+                const response = await fetch('https://ai.yong1412.my/telemetry/health.php');
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('sys-temp').innerText = data.temperature_c + " °C";
+                    document.getElementById('core-volt').innerText = data.core_voltage + " V"; // <-- NEW LINE
+                    document.getElementById('cpu-load').innerText = data.cpu_load;
+                    document.getElementById('ram-usage').innerText = data.ram_used_mb + " / " + data.ram_total_mb + " MB";
+                }
+            } catch (error) {
+                console.error("Telemetry failed:", error);
+                document.getElementById('sys-temp').innerText = "OFFLINE";
+                document.getElementById('sys-temp').className = "val error-text";
             }
         }
+        
+        // Fetch stats immediately, then update every 5 seconds
+        fetchTelemetry();
+        setInterval(fetchTelemetry, 500);
 
-        async function loadUserHistory() {
-            try {
-                const res = await fetch(`https://ai.yong1412.my/api/history.php?user=${activeUser}`);
-                const pastMessages = await res.json();
 
-                pastMessages.forEach(msg => {
-                    conversationHistory.push({ role: msg.role, content: msg.content });
-
-                    const cssClass = msg.role === 'user' ? 'user-row' : 'ai-row';
-                    const label = msg.role === 'user' ? activeUser : 'Qwen2.5-Coder';
-
-                    chatBox.innerHTML += `
-                    <div class="message-row ${cssClass}">
-                        <span class="label">${label}</span>
-                        <div class="bubble">${msg.content}</div>
-                    </div>`;
-                });
-                chatBox.scrollTop = chatBox.scrollHeight;
-            } catch (e) { console.log("New user, no history."); }
-        }
-
-        async function updateSystemHealth() {
-            try {
-                const res = await fetch('https://ai.yong1412.my/api/health.php');
-                if (!res.ok) return;
-                const data = await res.json();
-                document.getElementById('pi-temp').innerText = `${data.temp}°C`;
-                document.getElementById('pi-cpu').innerText = `${data.cpu_load}`;
-                document.getElementById('pi-ram').innerText = `${data.used_ram}`;
-            } catch (e) { }
-        }
+        // --- 2. AI CHAT ENGINE (Ollama) ---
+        const chatContainer = document.getElementById('chat-container');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Store conversation context for the AI
+        let messageHistory = [];
 
         async function sendMessage() {
-            const val = input.value.trim();
-            if (!val) return;
-            input.value = '';
+            const text = chatInput.value.trim();
+            if (!text) return;
 
-            chatBox.innerHTML += `
-            <div class="message-row user-row">
-                <span class="label">${activeUser}</span>
-                <div class="bubble">${val}</div>
-            </div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
+            // 1. Display User Message
+            appendMessage(text, 'user-msg');
+            chatInput.value = '';
+            sendBtn.disabled = true;
+            
+            // Add to history array
+            messageHistory.push({ role: "user", content: text });
 
-            conversationHistory.push({ role: 'user', content: val });
-
-            const aiRow = document.createElement('div');
-            aiRow.className = 'message-row ai-row';
-            aiRow.innerHTML = `
-                <span class="label">Qwen2.5-Coder</span>
-                <div class="bubble">...</div>
-                <span class="stats">Processing: <span class="live-timer">0.0</span>s</span>
-            `;
-            chatBox.appendChild(aiRow);
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            const timerSpan = aiRow.querySelector('.live-timer');
-            const bubbleText = aiRow.querySelector('.bubble');
-            const start = performance.now();
-            let aiFullResponse = "";
-
-            const timerInterval = setInterval(() => {
-                timerSpan.innerText = ((performance.now() - start) / 1000).toFixed(1);
-            }, 100);
+            // 2. Setup AI Loading State
+            const loadingId = "loading-" + Date.now();
+            appendMessage("Thinking...", 'ai-msg', loadingId);
 
             try {
-                const recentMessages = conversationHistory.slice(-4);
-
-                const response = await fetch('https://ai.yong1412.my/api/chat', {
+                // 3. Send to Ollama via Cloudflare Tunnel
+                const response = await fetch('https://chat.yong1412.my/api/chat', {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        model: 'phi3',
-                        messages: recentMessages,
-                        stream: true,
-                        keep_alive: '24h',
-                        options: { num_ctx: 2048, num_thread: 4 }
+                        model: 'qwen2.5-coder:0.5b',
+                        messages: messageHistory,
+                        stream: false, // Wait for full response for simplicity
+                        keep_alive: -1, // Maximum speed tweak: NEVER unload from RAM
+                        options: {
+                            num_thread: 4, // Maximum speed tweak: Use all Pi4 Cores
+                            num_ctx: 1024  // Maximum speed tweak: Shorter context memory
+                        }
                     })
                 });
 
-                bubbleText.innerText = '';
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder('utf-8');
+                if (!response.ok) throw new Error("AI Server Error");
 
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+                const data = await response.json();
+                const aiResponse = data.message.content;
 
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
+                // 4. Update UI and History
+                document.getElementById(loadingId).innerText = aiResponse;
+                messageHistory.push({ role: "assistant", content: aiResponse });
 
-                    for (const line of lines) {
-                        if (!line.trim()) continue;
-                        try {
-                            const parsed = JSON.parse(line);
-                            if (parsed.message && parsed.message.content) {
-                                bubbleText.innerText += parsed.message.content;
-                                aiFullResponse += parsed.message.content;
-                                chatBox.scrollTop = chatBox.scrollHeight;
-                            }
-                        } catch (e) { }
-                    }
-                }
-
-                clearInterval(timerInterval);
-                aiRow.querySelector('.stats').innerText = `${((performance.now() - start) / 1000).toFixed(2)}s Stream Complete`;
-
-                conversationHistory.push({ role: 'assistant', content: aiFullResponse });
-
-                fetch('https://ai.yong1412.my/api/history.php', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        username: activeUser,
-                        userMsg: val,
-                        aiMsg: aiFullResponse
-                    })
-                });
-
-            } catch (err) {
-                clearInterval(timerInterval);
-                bubbleText.innerText = `Connection lost: ${err.message}`;
+            } catch (error) {
+                console.error(error);
+                document.getElementById(loadingId).innerText = "ERROR: Could not connect to Qwen2.5 on Raspberry Pi.";
+                document.getElementById(loadingId).style.color = "#ff5252";
+            } finally {
+                sendBtn.disabled = false;
+                chatInput.focus();
+                scrollToBottom();
             }
         }
+
+        // --- Helper Functions ---
+        function appendMessage(text, className, id = "") {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${className}`;
+            if (id) msgDiv.id = id;
+            msgDiv.innerText = text; // innerText safely escapes HTML tags in code
+            chatContainer.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Allow pressing "Enter" to send
+        chatInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        sendBtn.addEventListener('click', sendMessage);
     </script>
 </body>
-
 </html>
-
-```
