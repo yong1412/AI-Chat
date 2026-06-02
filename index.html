@@ -6,115 +6,37 @@
     <title>Pi4 AI Control Center</title>
     <style>
         /* Base Styling */
-        body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
+        body {background-color: #121212;color: #e0e0e0;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;margin: 0;display: flex;flex-direction: column;height: 100vh;}
+        
         /* Telemetry Status Bar */
-        #telemetry-bar {
-            background-color: #1e1e1e;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-around;
-            border-bottom: 2px solid #333;
-            font-size: 14px;
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
+        #telemetry-bar {background-color: #1e1e1e;padding: 15px 20px;display: flex;justify-content: space-around;border-bottom: 2px solid #333;font-size: 14px; font-weight: bold;box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
         .stat { color: #4DA8DA; }
-        .val { color: #ffffff; margin-left: 5px; }
+        .val { color: #ffffff; margin-left: 5px; transition: color 0.3s ease; }
         .error-text { color: #ff5252; }
 
         /* Chat Interface */
-        #chat-container {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        #chat-container {flex-grow: 1;padding: 20px;overflow-y: auto;display: flex;flex-direction: column;gap: 15px;}
+        .message {max-width: 80%;padding: 12px 16px;border-radius: 8px;line-height: 1.5;word-wrap: break-word;}
+        .user-msg {background-color: #2979ff;color: white;align-self: flex-end;border-bottom-right-radius: 0;}
+        .ai-msg {background-color: #2d2d2d;color: #e0e0e0;align-self: flex-start;border-bottom-left-radius: 0;border: 1px solid #444;}
         
-        .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 8px;
-            line-height: 1.5;
-            word-wrap: break-word;
-        }
-        
-        .user-msg {
-            background-color: #2979ff;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 0;
-        }
-        
-        .ai-msg {
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            align-self: flex-start;
-            border-bottom-left-radius: 0;
-            border: 1px solid #444;
-        }
+        /* Timer Styling */
+        .time-elapsed {display: block;font-size: 12px;color: #888888;margin-top: 10px;padding-top: 8px;border-top: 1px dashed #555;font-family: monospace;}
 
         /* Input Area */
-        #input-area {
-            background-color: #1e1e1e;
-            padding: 15px 20px;
-            display: flex;
-            gap: 10px;
-            border-top: 2px solid #333;
-        }
-
-        #chat-input {
-            flex-grow: 1;
-            background-color: #2d2d2d;
-            border: 1px solid #444;
-            color: white;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 16px;
-            outline: none;
-        }
-        
-        #chat-input:focus {
-            border-color: #4DA8DA;
-        }
-
-        #send-btn {
-            background-color: #4DA8DA;
-            color: #121212;
-            border: none;
-            padding: 0 25px;
-            font-weight: bold;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        #send-btn:hover {
-            background-color: #3b8bc2;
-        }
-        
-        #send-btn:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
+        #input-area {background-color: #1e1e1e;padding: 15px 20px;display: flex;gap: 10px;border-top: 2px solid #333;}
+        #chat-input {flex-grow: 1;background-color: #2d2d2d;border: 1px solid #444;color: white;padding: 12px;border-radius: 6px;font-size: 16px;outline: none;}
+        #chat-input:focus {border-color: #4DA8DA;}
+        #send-btn {background-color: #4DA8DA;color: #121212;border: none;padding: 0 25px;font-weight: bold;font-size: 16px;border-radius: 6px;cursor: pointer;transition: background 0.2s;}
+        #send-btn:hover {background-color: #3b8bc2;}
+        #send-btn:disabled {background-color: #555;cursor: not-allowed;}
     </style>
 </head>
 <body>
 
     <div id="telemetry-bar">
         <div><span class="stat">SYS TEMP:</span><span class="val" id="sys-temp">-- °C</span></div>
-        <div><span class="stat">CPU LOAD:</span><span class="val" id="cpu-load">-- %</span></div>
+        <div><span class="stat">CPU LOAD:</span><span class="val" id="cpu-load">-- / 4.00</span></div>
         <div><span class="stat">CORE VOLT:</span><span class="val" id="core-volt">-- V</span></div>
         <div><span class="stat">RAM USAGE:</span><span class="val" id="ram-usage">-- / -- MB</span></div>
     </div>
@@ -132,14 +54,34 @@
         // --- 1. TELEMETRY POLLING (Apache) ---
         async function fetchTelemetry() {
             try {
-                // Calls your PHP script routed through Cloudflare
                 const response = await fetch('https://ai.yong1412.my/telemetry/health.php');
                 if (response.ok) {
                     const data = await response.json();
+                    
+                    // --- CPU Logic ---
+                    const cpuRaw = parseFloat(data.cpu_load);
+                    const cpuFormatted = cpuRaw.toFixed(2);
+                    const cpuElement = document.getElementById('cpu-load');
+                    
+                    cpuElement.innerText = cpuFormatted + " / 4.00";
+                    
+                    // Apply conditional colors based on load
+                    if (cpuRaw > 6.00) {
+                        cpuElement.style.color = "#ff5252"; // Red
+                    } else if (cpuRaw > 4.00) {
+                        cpuElement.style.color = "#ffeb3b"; // Yellow
+                    } else {
+                        cpuElement.style.color = "#ffffff"; // Default White
+                    }
+
+                    // --- Other Telemetry ---
+                    const voltFormatted = parseFloat(data.core_voltage).toFixed(2);
+                    const ramUsed = Number(data.ram_used_mb).toLocaleString('en-US').replace(/,/g, '.');
+                    const ramTotal = Number(data.ram_total_mb).toLocaleString('en-US').replace(/,/g, '.');
+
                     document.getElementById('sys-temp').innerText = data.temperature_c + " °C";
-                    document.getElementById('core-volt').innerText = data.core_voltage + " V"; // <-- NEW LINE
-                    document.getElementById('cpu-load').innerText = data.cpu_load;
-                    document.getElementById('ram-usage').innerText = data.ram_used_mb + " / " + data.ram_total_mb + " MB";
+                    document.getElementById('core-volt').innerText = voltFormatted + " V";
+                    document.getElementById('ram-usage').innerText = ramUsed + " / " + ramTotal + " MB";
                 }
             } catch (error) {
                 console.error("Telemetry failed:", error);
@@ -148,17 +90,13 @@
             }
         }
         
-        // Fetch stats immediately, then update every 5 seconds
         fetchTelemetry();
         setInterval(fetchTelemetry, 500);
-
 
         // --- 2. AI CHAT ENGINE (Ollama) ---
         const chatContainer = document.getElementById('chat-container');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
-        
-        // Store conversation context for the AI
         let messageHistory = [];
 
         async function sendMessage() {
@@ -169,44 +107,92 @@
             appendMessage(text, 'user-msg');
             chatInput.value = '';
             sendBtn.disabled = true;
-            
-            // Add to history array
             messageHistory.push({ role: "user", content: text });
 
-            // 2. Setup AI Loading State
-            const loadingId = "loading-" + Date.now();
-            appendMessage("Thinking...", 'ai-msg', loadingId);
+            // 2. Setup AI UI (Text Area + Live Timer Area)
+            const loadingId = "ai-" + Date.now();
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai-msg';
+            msgDiv.id = loadingId;
+            
+            const textDiv = document.createElement('div');
+            textDiv.innerText = "Thinking...";
+            msgDiv.appendChild(textDiv);
+
+            const timerDiv = document.createElement('div');
+            timerDiv.className = 'time-elapsed';
+            timerDiv.innerText = `⏱️ Processed in 0.00s`;
+            msgDiv.appendChild(timerDiv);
+
+            chatContainer.appendChild(msgDiv);
+            scrollToBottom();
+
+            // 3. Start Live Timer
+            const startTime = performance.now();
+            let timerInterval = setInterval(() => {
+                const currentElapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+                timerDiv.innerText = `⏱️ Processed in ${currentElapsed}s`;
+            }, 50);
 
             try {
-                // 3. Send to Ollama via Cloudflare Tunnel
+                // 4. Send to Ollama via Stream
                 const response = await fetch('https://chat.yong1412.my/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         model: 'qwen2.5-coder:0.5b',
                         messages: messageHistory,
-                        stream: false, // Wait for full response for simplicity
-                        keep_alive: -1, // Maximum speed tweak: NEVER unload from RAM
-                        options: {
-                            num_thread: 4, // Maximum speed tweak: Use all Pi4 Cores
-                            num_ctx: 1024  // Maximum speed tweak: Shorter context memory
-                        }
+                        stream: true,
+                        keep_alive: -1,
+                        options: { num_thread: 4, num_ctx: 1024 }
                     })
                 });
 
                 if (!response.ok) throw new Error("AI Server Error");
 
-                const data = await response.json();
-                const aiResponse = data.message.content;
+                // 5. Read Stream Chunks
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = "";
+                let isFirstChunk = true;
+                let buffer = "";
 
-                // 4. Update UI and History
-                document.getElementById(loadingId).innerText = aiResponse;
-                messageHistory.push({ role: "assistant", content: aiResponse });
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    
+                    buffer = lines.pop(); 
+
+                    for (const line of lines) {
+                        if (line.trim()) {
+                            const data = JSON.parse(line);
+                            if (data.message && data.message.content) {
+                                if (isFirstChunk) {
+                                    textDiv.innerText = "";
+                                    isFirstChunk = false;
+                                }
+                                fullResponse += data.message.content;
+                                textDiv.innerText = fullResponse;
+                                scrollToBottom();
+                            }
+                        }
+                    }
+                }
+
+                // 6. Finalize Time and History
+                clearInterval(timerInterval);
+                const finalTime = ((performance.now() - startTime) / 1000).toFixed(2);
+                timerDiv.innerText = `⏱️ Processed in ${finalTime}s`;
+                messageHistory.push({ role: "assistant", content: fullResponse });
 
             } catch (error) {
                 console.error(error);
-                document.getElementById(loadingId).innerText = "ERROR: Could not connect to Qwen2.5 on Raspberry Pi.";
-                document.getElementById(loadingId).style.color = "#ff5252";
+                clearInterval(timerInterval);
+                textDiv.innerText = "ERROR: Could not connect to Qwen2.5 on Raspberry Pi.";
+                textDiv.style.color = "#ff5252";
             } finally {
                 sendBtn.disabled = false;
                 chatInput.focus();
@@ -214,12 +200,10 @@
             }
         }
 
-        // --- Helper Functions ---
-        function appendMessage(text, className, id = "") {
+        function appendMessage(text, className) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${className}`;
-            if (id) msgDiv.id = id;
-            msgDiv.innerText = text; // innerText safely escapes HTML tags in code
+            msgDiv.innerText = text;
             chatContainer.appendChild(msgDiv);
             scrollToBottom();
         }
@@ -228,7 +212,6 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Allow pressing "Enter" to send
         chatInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') sendMessage();
         });
