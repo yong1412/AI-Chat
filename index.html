@@ -27,9 +27,10 @@
         #input-area {background-color: #1e1e1e;padding: 15px 20px;display: flex;gap: 10px;border-top: 2px solid #333;}
         #model-select {background-color: #2d2d2d;color: #4DA8DA;border: 1px solid #444;padding: 12px;border-radius: 6px;font-size: 14px;font-weight: bold;outline: none;cursor: pointer;}
         #model-select:focus {border-color: #4DA8DA;}
-        #chat-input {flex-grow: 1;background-color: #2d2d2d;border: 1px solid #444;color: white;padding: 12px;border-radius: 6px;font-size: 16px;outline: none;}
+        .input-wrapper {display: flex; flex-grow: 1; gap: 10px;}
+        #chat-input {flex-grow: 1;min-width: 0;background-color: #2d2d2d;border: 1px solid #444;color: white;padding: 12px;border-radius: 6px;font-size: 16px;outline: none;}
         #chat-input:focus {border-color: #4DA8DA;}
-        #send-btn {background-color: #4DA8DA;color: #121212;border: none;padding: 0 25px;font-weight: bold;font-size: 16px;border-radius: 6px;cursor: pointer;transition: background 0.2s;}
+        #send-btn {background-color: #4DA8DA;color: #121212;border: none;width: 50px;display: flex;align-items: center;justify-content: center;border-radius: 6px;cursor: pointer;transition: background 0.2s;flex-shrink: 0;}
         #send-btn:hover {background-color: #3b8bc2;}
         #send-btn:disabled {background-color: #555;cursor: not-allowed;}
 
@@ -38,7 +39,6 @@
             #telemetry-bar {flex-wrap: wrap; justify-content: space-between; gap: 10px;}
             #telemetry-bar div {width: 48%; font-size: 12px;}
             #input-area {flex-direction: column;}
-            #send-btn {padding: 15px; width: 100%;}
             .message {max-width: 95%;}
         }
     </style>
@@ -63,8 +63,15 @@
             <option value="qwen2.5-coder:3b">3B (Smartest)</option>
         </select>
         
-        <input type="text" id="chat-input" placeholder="Enter command or question..." autocomplete="off">
-        <button id="send-btn">Send</button>
+        <div class="input-wrapper">
+            <input type="text" id="chat-input" placeholder="Enter command or question..." autocomplete="off">
+            <button id="send-btn" aria-label="Send">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <script>
