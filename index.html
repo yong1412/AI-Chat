@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pi4 AI Control Center</title>
     <style>
         /* Base Styling */
@@ -32,6 +32,15 @@
         #send-btn {background-color: #4DA8DA;color: #121212;border: none;padding: 0 25px;font-weight: bold;font-size: 16px;border-radius: 6px;cursor: pointer;transition: background 0.2s;}
         #send-btn:hover {background-color: #3b8bc2;}
         #send-btn:disabled {background-color: #555;cursor: not-allowed;}
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            #telemetry-bar {flex-wrap: wrap; justify-content: space-between; gap: 10px;}
+            #telemetry-bar div {width: 48%; font-size: 12px;}
+            #input-area {flex-direction: column;}
+            #send-btn {padding: 15px; width: 100%;}
+            .message {max-width: 95%;}
+        }
     </style>
 </head>
 <body>
