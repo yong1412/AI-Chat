@@ -6,65 +6,68 @@
     <title>Pi4 AI Control Center</title>
     <style>
         /* Base Styling */
-        body {background-color: #121212;color: #e0e0e0;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;margin: 0;display: flex;flex-direction: column;height: 100vh;}
+        body {background-color: #131314;color: #e3e3e3;font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;margin: 0;display: flex;flex-direction: column;height: 100vh;}
         
-        /* Telemetry Status Bar */
-        #telemetry-bar {background-color: #1e1e1e;padding: 15px 20px;display: flex;justify-content: space-around;border-bottom: 2px solid #333;font-size: 14px; font-weight: bold;box-shadow: 0 4px 6px rgba(0,0,0,0.3);}
-        .stat { color: #4DA8DA; }
-        .val { color: #ffffff; margin-left: 5px; transition: color 0.3s ease; }
+        /* Telemetry Status Bar - Minimalist */
+        #telemetry-bar {background-color: transparent;padding: 10px 20px;display: flex;justify-content: space-around;border-bottom: 1px solid #282a2c;font-size: 13px;}
+        .stat { color: #888888; font-size: 11px; letter-spacing: 0.5px;}
+        .val { color: #e3e3e3; margin-left: 5px; font-weight: 600; transition: color 0.3s ease; }
         .error-text { color: #ff5252; }
 
         /* Chat Interface */
-        #chat-container {flex-grow: 1;padding: 20px;overflow-y: auto;display: flex;flex-direction: column;gap: 15px;}
-        .message {max-width: 80%;padding: 12px 16px;border-radius: 8px;line-height: 1.5;word-wrap: break-word;}
-        .user-msg {background-color: #2979ff;color: white;align-self: flex-end;border-bottom-right-radius: 0;}
-        .ai-msg {background-color: #2d2d2d;color: #e0e0e0;align-self: flex-start;border-bottom-left-radius: 0;border: 1px solid #444;}
+        #chat-container {flex-grow: 1;padding: 20px 15px;overflow-y: auto;display: flex;flex-direction: column;gap: 24px;}
+        .message {max-width: 85%;padding: 14px 18px;border-radius: 24px;line-height: 1.6;word-wrap: break-word;font-size: 16px;}
+        .user-msg {background-color: #303030;color: #e3e3e3;align-self: flex-end;border-bottom-right-radius: 6px;}
+        .ai-msg {background-color: transparent;color: #e3e3e3;align-self: flex-start;padding-left: 0;padding-right: 0;}
         
         /* Timer Styling */
-        .time-elapsed {display: block;font-size: 12px;color: #888888;margin-top: 10px;padding-top: 8px;border-top: 1px dashed #555;font-family: monospace;}
+        .time-elapsed {display: block;font-size: 12px;color: #a8c7fa;margin-top: 8px;font-family: monospace; opacity: 0.8;}
 
-        /* Input Area & Dropdown */
-        #input-area {background-color: #1e1e1e;padding: 15px 20px;display: flex;gap: 10px;border-top: 2px solid #333;}
-        #model-select {background-color: #2d2d2d;color: #4DA8DA;border: 1px solid #444;padding: 12px;border-radius: 6px;font-size: 14px;font-weight: bold;outline: none;cursor: pointer;}
-        #model-select:focus {border-color: #4DA8DA;}
-        #chat-input {flex-grow: 1;background-color: #2d2d2d;border: 1px solid #444;color: white;padding: 12px;border-radius: 6px;font-size: 16px;outline: none;}
-        #chat-input:focus {border-color: #4DA8DA;}
-        #send-btn {background-color: #4DA8DA;color: #121212;border: none;padding: 0 25px;font-weight: bold;font-size: 16px;border-radius: 6px;cursor: pointer;transition: background 0.2s;}
-        #send-btn:hover {background-color: #3b8bc2;}
-        #send-btn:disabled {background-color: #555;cursor: not-allowed;}
+        /* Gemini Floating Input Pill */
+        #input-wrapper {background-color: #1e1f20;margin: 10px 20px 20px 20px;border-radius: 32px;display: flex;align-items: center;padding: 6px 8px 6px 16px;gap: 8px;}
+        #model-select {background-color: transparent;color: #a8c7fa;border: none;font-size: 14px;font-weight: 600;outline: none;cursor: pointer;padding: 8px 4px; appearance: none;}
+        #model-select option {background-color: #1e1f20;color: #e3e3e3;}
+        #chat-input {flex-grow: 1;background-color: transparent;border: none;color: white;padding: 12px 5px;font-size: 16px;outline: none;}
+        #chat-input::placeholder {color: #8e8e8e;}
+        
+        /* Circular Send Button */
+        #send-btn {background-color: #a8c7fa;color: #041e49;border: none;width: 42px;height: 42px;border-radius: 50%;font-weight: bold;font-size: 20px;cursor: pointer;display: flex;justify-content: center;align-items: center;transition: opacity 0.2s;flex-shrink: 0;}
+        #send-btn:hover {opacity: 0.8;}
+        #send-btn:disabled {background-color: #444;color: #888;cursor: not-allowed;}
 
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
-            #telemetry-bar {flex-wrap: wrap; justify-content: space-between; gap: 10px;}
-            #telemetry-bar div {width: 48%; font-size: 12px;}
-            #input-area {flex-direction: column;}
-            #send-btn {padding: 15px; width: 100%;}
-            .message {max-width: 95%;}
+            #telemetry-bar {flex-wrap: wrap;justify-content: space-between;gap: 12px;padding: 15px;}
+            #telemetry-bar div {width: 45%;text-align: left;}
+            #input-wrapper {margin: 10px 12px 15px 12px;padding: 4px 6px 4px 12px;border-radius: 28px;}
+            #model-select {max-width: 70px;text-overflow: ellipsis;overflow: hidden;font-size: 13px;}
+            .message {max-width: 90%;font-size: 15px;}
+            #send-btn {width: 38px;height: 38px;font-size: 18px;}
         }
     </style>
 </head>
 <body>
 
     <div id="telemetry-bar">
-        <div><span class="stat">SYS TEMP:</span><span class="val" id="sys-temp">-- °C</span></div>
-        <div><span class="stat">CPU LOAD:</span><span class="val" id="cpu-load">-- / 4.00</span></div>
-        <div><span class="stat">CORE VOLT:</span><span class="val" id="core-volt">-- V</span></div>
-        <div><span class="stat">RAM USAGE:</span><span class="val" id="ram-usage">-- / -- MB</span></div>
+        <div><span class="stat">TEMP:</span><span class="val" id="sys-temp">-- °C</span></div>
+        <div><span class="stat">CPU:</span><span class="val" id="cpu-load">-- / 4.00</span></div>
+        <div><span class="stat">VOLT:</span><span class="val" id="core-volt">-- V</span></div>
+        <div><span class="stat">RAM:</span><span class="val" id="ram-usage">-- / -- MB</span></div>
     </div>
 
     <div id="chat-container">
         <div class="message ai-msg">System Online. Qwen2.5-Coder is ready. How can I help you today?</div>
     </div>
 
-    <div id="input-area">
+    <div id="input-wrapper">
         <select id="model-select">
-            <option value="qwen2.5-coder:0.5b">0.5B (Fastest)</option>
-            <option value="qwen2.5-coder:1.5b">1.5B (Balanced)</option>
-            <option value="qwen2.5-coder:3b">3B (Smartest)</option>
+            <option value="qwen2.5-coder:0.5b">0.5B</option>
+            <option value="qwen2.5-coder:1.5b">1.5B</option>
+            <option value="qwen2.5-coder:3b">3B</option>
         </select>
         
-        <input type="text" id="chat-input" placeholder="Enter command or question..." autocomplete="off">
-        <button id="send-btn">Send</button>
+        <input type="text" id="chat-input" placeholder="Ask me anything..." autocomplete="off">
+        <button id="send-btn">↑</button>
     </div>
 
     <script>
@@ -88,7 +91,7 @@
                     } else if (cpuRaw > 4.00) {
                         cpuElement.style.color = "#ffeb3b"; // Yellow
                     } else {
-                        cpuElement.style.color = "#ffffff"; // Default White
+                        cpuElement.style.color = "#e3e3e3"; // Default White/Grey
                     }
 
                     // --- Other Telemetry ---
