@@ -30,7 +30,9 @@
         .input-wrapper {display: flex; flex-grow: 1; gap: 10px;}
         #chat-input {flex-grow: 1;min-width: 0;background-color: #2d2d2d;border: 1px solid #444;color: white;padding: 12px;border-radius: 6px;font-size: 16px;outline: none;}
         #chat-input:focus {border-color: #4DA8DA;}
-        #send-btn {background-color: #4DA8DA;color: #121212;border: none;width: 50px;display: flex;align-items: center;justify-content: center;border-radius: 6px;cursor: pointer;transition: background 0.2s;flex-shrink: 0;}
+        #send-btn {background-color: #4DA8DA;color: #121212;border: none;padding: 0 25px;font-weight: bold;font-size: 16px;display: flex;align-items: center;justify-content: center;border-radius: 6px;cursor: pointer;transition: background 0.2s;flex-shrink: 0;}
+        .send-icon {display: none;}
+        .send-text {display: inline;}
         #send-btn:hover {background-color: #3b8bc2;}
         #send-btn:disabled {background-color: #555;cursor: not-allowed;}
 
@@ -40,6 +42,9 @@
             #telemetry-bar div {width: 48%; font-size: 12px;}
             #input-area {flex-direction: column;}
             .message {max-width: 95%;}
+            #send-btn {padding: 0; width: 50px;}
+            .send-icon {display: block;}
+            .send-text {display: none;}
         }
     </style>
 </head>
@@ -66,7 +71,8 @@
         <div class="input-wrapper">
             <input type="text" id="chat-input" placeholder="Enter command or question..." autocomplete="off">
             <button id="send-btn" aria-label="Send">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <span class="send-text">Send</span>
+                <svg class="send-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="19" x2="12" y2="5"></line>
                     <polyline points="5 12 12 5 19 12"></polyline>
                 </svg>
